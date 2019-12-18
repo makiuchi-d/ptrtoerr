@@ -44,6 +44,19 @@ func f3() (error, error) {
 	return p, nil // want "Return pointer as error"
 }
 
+func f4() error {
+	var err error = func() *MyErr { // want "Assign pointer to error"
+		var f = func() error {
+			var err *MyErr
+			return err // want "Return pointer as error"
+		}
+		return f().(*MyErr)
+	}()
+	return err.(*MyErr) // want "Return pointer as error"
+}
+
+var e1, e2 error = nil, f() // want "Assign pointer to error"
+
 func main() {
 	var err error
 	var p *MyErr

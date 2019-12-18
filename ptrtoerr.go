@@ -29,6 +29,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		(*ast.AssignStmt)(nil),
 		(*ast.FuncDecl)(nil),
 		(*ast.FuncLit)(nil),
+		(*ast.ValueSpec)(nil),
 	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
@@ -39,6 +40,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			checkFuncReturn(pass, n.Type, n.Body)
 		case *ast.FuncLit:
 			checkFuncReturn(pass, n.Type, n.Body)
+		case *ast.ValueSpec:
+			checkValueSpec(pass, n)
 		}
 	})
 
@@ -86,4 +89,16 @@ func checkFuncReturn(pass *analysis.Pass, t *ast.FuncType, b *ast.BlockStmt) {
 		}
 		return true
 	})
+}
+
+func checkValueSpec(pass *analysis.Pass, n *ast.ValueSpec) {
+	if pass.TypesInfo.TypeOf(n.Type) != errType {
+		return
+	}
+	for _, v := range n.Values {
+		_, isPtr := pass.TypesInfo.TypeOf(v).(*types.Pointer)
+		if isPtr {
+			pass.Reportf(n.Pos(), "Assign pointer to error")
+		}
+	}
 }
